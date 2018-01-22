@@ -1,0 +1,38 @@
+utils:::menuInstallPkgs()
+RSiteSearch("PLOTTING TWO CURVES")
+seq?
+q()
+setwd( "D:/MyDocs/_Upgrad")
+loan_df <- read.csv("loan.csv",stringsAsFactors = F)
+head(loan_df)
+str(loan_df)
+loan_df$id <- as.factor(loan_df$id)
+loan_df$member_id <- as.factor(loan_df$member_id)
+#
+str(loan_df)
+# summary of loan_data frame
+sapply(loan_df, summary)
+# ignore unwanted columns
+which(colnames(loan_df) == "collections_12_mths_ex_med"):length(colnames(loan_df))
+# ignoring columns that do not have data
+new_loan_df <- loan_df[,1:which(colnames(loan_df) == "collections_12_mths_ex_med")-1]
+table(new_loan_df$pymnt_plan)
+new_loan_df$loan_status <- as.factor(new_loan_df$loan_status)
+new_loan_df$addr_state <- as.factor(new_loan_df$addr_state)
+new_loan_df$grade <- as.factor(new_loan_df$grade)
+new_loan_df$grade <- as.factor(new_loan_df$sub_grade)
+new_loan_df$delinq_2yrs <- as.factor(new_loan_df$delinq_2yrs)
+new_loan_df$pub_rec <- as.factor()
+new_loan_df$pub_rec
+sum(new_loan_df$pub_rec)
+summary(new_loan_df$pub_rec)
+View(new_loan_df)
+sapply(new_loan_df, summary)
+summary(as.factor(new_loan_df$initial_list_status))
+new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) == "initial_list_status")]
+new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) == "url")]
+new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) == "pymnt_plan")]
+summary(as.factor(new_loan_df$delinq_2yrs))
+summary(as.factor(new_loan_df$pub_rec))
+new_loan_df$pub_rec <- as.factor(pub_rec)
+summary(as.factor(new_loan_df$pub_rec))
