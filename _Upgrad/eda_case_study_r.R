@@ -5,47 +5,48 @@ library(tidyr)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
-
+library(stringr)
 
 loan_df <- read.csv("loan.csv",stringsAsFactors = F)
 head(loan_df)
 
+loan_bkp <- loan_df
 str(loan_df)
 
 # Data Cleaning
 
-loan_df$id <- as.factor(loan_df$id)
-loan_df$member_id <- as.factor(loan_df$member_id)
 
 # summary of loan_data frame
 sapply(loan_df, summary)
-
+colnames(loan_df)
 # ignore unwanted columns
 which(colnames(loan_df) == "collections_12_mths_ex_med"):length(colnames(loan_df))
 
 
-# ignoring columns that do not have data
+# ignoring columns that has NAs
 new_loan_df <- loan_df[,1:which(colnames(loan_df) == "collections_12_mths_ex_med")-1]
+# deleting unwanted columns
 
+-which(colnames(loan_df) %in% c("initial_list_status","url","pymnt_plan","funded_amnt_inv","zip_code","earliest_cr_line","mths_since_last_record","pub_rec","out_prncp_inv","total_pymnt_inv","next_pymnt_d"))
+
+new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) %in% c ("initial_list_status",
+                                   "url","pymnt_plan","funded_amnt_inv","zip_code","earliest_cr_line",
+                                   "mths_since_last_record","pub_rec","out_prncp_inv","total_pymnt_inv","next_pymnt_d"))]
+
+View(new_loan_df)
 
 # converting the loan data to factors
+# converting data to factors
+
+new_loan_df$id <- as.factor(new_loan_df$id)
+new_loan_df$member_id <- as.factor(new_loan_df$member_id)
 new_loan_df$loan_status <- as.factor(new_loan_df$loan_status)
 new_loan_df$addr_state <- as.factor(new_loan_df$addr_state)
 new_loan_df$grade <- as.factor(new_loan_df$grade)
-new_loan_df$grade <- as.factor(new_loan_df$sub_grade)
+new_loan_df$sub_grade <- as.factor(new_loan_df$sub_grade)
 new_loan_df$delinq_2yrs <- as.factor(new_loan_df$delinq_2yrs)
-new_loan_df$pub_rec <- as.factor(pub_rec)
 
-# deleting unwanted columns
-new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) == "initial_list_status")]
-new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) == "url")]
-new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) == "pymnt_plan")]
-summary(as.factor(new_loan_df$delinq_2yrs))
-summary(as.factor(new_loan_df$pub_rec))
 
-sapply(new_loan_df, summary)
-
-View(new_loan_df)
 
 # converting the columns to lower case characters
 new_loan_df$loan_status <- tolower(new_loan_df$ loan_status)
@@ -54,6 +55,42 @@ new_loan_df$home_ownership <- tolower(new_loan_df$home_ownership)
 new_loan_df$verification_status <- tolower(new_loan_df$verification_status)
 new_loan_df$title <- tolower(new_loan_df$title)
 new_loan_df$purpose <- tolower(new_loan_df$purpose)
+
+
+# removing the "years" from years columns, "%"
+# renaming column headers
+names(new_loan_df)[which(colnames(new_loan_df) %in% c("term","int_rate","emp_length","revol_util"))] <- c("term_mnths","int_per","emp_yrs","revol_util_per")
+View(new_loan_df)
+
+# removing years, months, % symbols
+new_loan_df$int_per <- str_replace(new_loan_df$int_per,pattern = "%",replacement = "")
+new_loan_df$term_mnths <-str_replace(new_loan_df$term_mnths,pattern = " months",replacement = "")
+new_loan_df$emp_yrs <- gsub(pattern = "  years| year|s|+s| |/",replacement = "",x = new_loan_df$emp_yrs,ignore.case = T)
+new_loan_df$revol_util_per <- str_replace(new_loan_df$revol_util_per,pattern = "%",replacement = "")
+
+
+# convert the interest rates to numeric
+new_loan_df$int_per <- as.numeric(new_loan_df$int_per)
+
+# rounding up the interest rates to 2 decimals
+new_loan_df$int_per <- round(new_loan_df$int_per,digits = 2)
+
+#convert term loan, revol_util_per to numeric
+new_loan_df$term_mnths <- as.numeric(new_loan_df$term_mnths)
+new_loan_df$revol_util_per <- as.numeric(new_loan_df$revol_util_per)
+
+
+# remove decimals in the annual income
+
+colnames(new_loan_df)
+new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt","installment","total_rec_prncp","total_rec_int","recoveries","collection_recovery_fee")] <- round(new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt","installment","total_rec_prncp","total_rec_int","recoveries","collection_recovery_fee")],0)
+
+table(new_loan_df$emp_yrs)
+
+
+
+
+
 
 
 # year and date formating of dates
@@ -82,6 +119,12 @@ new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_year)
 # To develop your understanding of the domain, 
 # you are advised to independently research a little about risk analytics 
 # (understanding the types of variables and their significance should be enough).
+
+
+
+
+
+
 
 
 # UNIVARIATE ANLYSIS
@@ -127,4 +170,6 @@ ggplot(new_loan_df,aes(fct_infreq(grade,ordered = T))) + geom_bar()
 
 new_loan_df_charged_off <- subset(new_loan_df,new_loan_df$loan_status == "charged off")
 str(new_loan_df_charged_off)
-
+# calculating the percentage of pub rec with Zeros
+options(scipen=999)
+round(table(new_loan_df$pub_rec)/length(new_loan_df$pub_rec),digits = 2)
