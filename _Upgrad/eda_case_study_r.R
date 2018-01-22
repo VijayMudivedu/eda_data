@@ -1,4 +1,5 @@
-setwd( "D:/MyDocs/_Upgrad")
+
+setwd( "D:/MyDocs/eda/eda_data/_Upgrad")
 setwd("/Users/Vijay/Downloads/eda_data/_Upgrad")
 
 library(tidyr)
@@ -25,8 +26,10 @@ which(colnames(loan_df) == "collections_12_mths_ex_med"):length(colnames(loan_df
 
 # ignoring columns that has NAs
 new_loan_df <- loan_df[,1:which(colnames(loan_df) == "collections_12_mths_ex_med")-1]
+
 # deleting unwanted columns
 
+# column numbers of unwanted columns are
 -which(colnames(loan_df) %in% c("initial_list_status","url","pymnt_plan","funded_amnt_inv","zip_code","earliest_cr_line","mths_since_last_record","pub_rec","out_prncp_inv","total_pymnt_inv","next_pymnt_d"))
 
 new_loan_df <- new_loan_df[,-which(colnames(new_loan_df) %in% c ("initial_list_status",
@@ -81,9 +84,14 @@ new_loan_df$revol_util_per <- as.numeric(new_loan_df$revol_util_per)
 
 
 # remove decimals in the annual income
-
 colnames(new_loan_df)
-new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt","installment","total_rec_prncp","total_rec_int","recoveries","collection_recovery_fee")] <- round(new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt","installment","total_rec_prncp","total_rec_int","recoveries","collection_recovery_fee")],0)
+new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt",
+              "installment","total_rec_prncp","total_rec_int","recoveries",
+              "collection_recovery_fee","last_pymnt_amnt")] <- round(new_loan_df[c("annual_inc","out_prncp",
+                                                                                   "total_rec_late_fee","total_pymnt",
+                                                                                   "installment","total_rec_prncp",
+                                                                                   "total_rec_int","recoveries","collection_recovery_fee",
+                                                                                   "last_pymnt_amnt")],0)
 
 table(new_loan_df$emp_yrs)
 
@@ -95,9 +103,12 @@ table(new_loan_df$emp_yrs)
 
 # year and date formating of dates
 
+
+# get the year of last payment due
 last_payment_due <- parse_date_time(x = new_loan_df$last_pymnt_d,orders = "%b-%y",tz = "Asia/Kolkata")
 new_loan_df$lpd_year <- format(last_payment_due,"%Y")
 
+# Get the month of the last payment due
 new_loan_df$lpd_month <- format(last_payment_due,"%m")
 
 new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_year)
