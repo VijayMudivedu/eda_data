@@ -1,8 +1,11 @@
 setwd( "D:/MyDocs/_Upgrad")
+setwd("/Users/Vijay/Downloads/eda_data/_Upgrad")
 
 library(tidyr)
 library(dplyr)
 library(lubridate)
+library(ggplot2)
+
 
 loan_df <- read.csv("loan.csv",stringsAsFactors = F)
 head(loan_df)
@@ -10,7 +13,6 @@ head(loan_df)
 str(loan_df)
 
 # Data Cleaning
-
 
 loan_df$id <- as.factor(loan_df$id)
 loan_df$member_id <- as.factor(loan_df$member_id)
@@ -67,7 +69,7 @@ new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_year)
 
 
 # "Identification of RISKY applicants using EDA is the aim of this case study."
-# - lending loans to ‘risky’ applicants is the largest source of financial loss (called credit loss). 
+# - lending loans to ?risky? applicants is the largest source of financial loss (called credit loss). 
 # - The credit loss is the amount of money lost by the lender when the borrower refuses to pay or runs away with the money owed. In other words, borrowers who default cause the largest amount of loss to the lenders. 
 # - In this case, the customers labelled as 'charged-off' are the 'defaulters'. 
 
@@ -84,7 +86,6 @@ new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_year)
 
 # UNIVARIATE ANLYSIS
 
-library(ggplot2)
 # Univariate analysis of Loan_status
 ggplot(new_loan_df,aes(loan_status)) + 
   geom_bar(stat = "count") + 
