@@ -99,7 +99,6 @@ new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt",
                                                                                    "total_rec_int","recoveries","collection_recovery_fee",
                                                                                    "last_pymnt_amnt")],0)
 
-table(new_loan_df$emp_yrs)
 
 
 # checking for duplicates
@@ -203,11 +202,33 @@ ggplot(new_loan_df,aes(reorder(addr_state,-table(addr_state)[addr_state]))) +geo
 library(forcats)
 ggplot(new_loan_df,aes(fct_infreq(addr_state,ordered = T))) + geom_bar()
 
-# Sub_grade
-ggplot(new_loan_df,aes(fct_infreq(grade,ordered = T))) + geom_bar()
+# loan grade
+new_loan_df %>% filter(new_loan_df$loan_status != "fully paid" ) %>% 
+  ggplot(aes(fct_infreq(grade,ordered = T),fill=loan_status)) + geom_bar(stat = "count",aes(identity = "count")) +
+  geom_text(stat = "count",aes(label = (..count..),vjust = -1, hjust = 0.5))
 
-new_loan_df_charged_off <- subset(new_loan_df,new_loan_df$loan_status == "charged off")
+# most of the charged_off loans are B and C grade loans
+
+# Sub_grade
+ggplot(new_loan_df,aes(fct_infreq(grade,ordered = T))) + 
+  geom_bar() +  
+  geom_text(stat = "count",aes(label = paste(round(x = (..count..)*100/sum(..count..),digits = 2),"%"),vjust = -0.5, hjust = 0.5))
+
+new_loan_df_charged_off <- subset(new_loan_df,loan_status == "charged off")
+View(new_loan_df_charged_off)
+
+
+
 str(new_loan_df_charged_off)
 # calculating the percentage of pub rec with Zeros
 options(scipen=999)
 round(table(new_loan_df$pub_rec)/length(new_loan_df$pub_rec),digits = 2)
+
+
+
+
+
+
+
+
+
