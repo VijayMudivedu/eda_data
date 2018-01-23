@@ -1,21 +1,26 @@
 
 setwd( "D:/MyDocs/eda/eda_data/_Upgrad")
-setwd("/Users/Vijay/Downloads/eda_data/_Upgrad")
+setwd("~/Downloads/eda_data/eda_casestudy")
+getwd()
 
 library(tidyr)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(stringr)
+library(scales)
 
+# import the loan csv file for analysis
 loan_df <- read.csv("loan.csv",stringsAsFactors = F)
-head(loan_df)
 
+# back up the loan data_frame
 loan_bkp <- loan_df
+
+# review the loan data frame
 str(loan_df)
+# review data frame has several unwanted columns from "collections_12_mths_ex_med"
 
 # Data Cleaning
-
 
 # summary of loan_data frame
 sapply(loan_df, summary)
@@ -27,7 +32,8 @@ which(colnames(loan_df) == "collections_12_mths_ex_med"):length(colnames(loan_df
 # ignoring columns that has NAs
 new_loan_df <- loan_df[,1:which(colnames(loan_df) == "collections_12_mths_ex_med")-1]
 
-# deleting unwanted columns
+
+# identifying and deleting other unwanted columns
 
 # column numbers of unwanted columns are
 -which(colnames(loan_df) %in% c("initial_list_status","url","pymnt_plan","funded_amnt_inv","zip_code","earliest_cr_line","mths_since_last_record","pub_rec","out_prncp_inv","total_pymnt_inv","next_pymnt_d"))
@@ -65,7 +71,7 @@ new_loan_df$purpose <- tolower(new_loan_df$purpose)
 names(new_loan_df)[which(colnames(new_loan_df) %in% c("term","int_rate","emp_length","revol_util"))] <- c("term_mnths","int_per","emp_yrs","revol_util_per")
 View(new_loan_df)
 
-# removing years, months, % symbols
+# removing years, months, % symbols from data
 new_loan_df$int_per <- str_replace(new_loan_df$int_per,pattern = "%",replacement = "")
 new_loan_df$term_mnths <-str_replace(new_loan_df$term_mnths,pattern = " months",replacement = "")
 new_loan_df$emp_yrs <- gsub(pattern = "  years| year|s|+s| |/",replacement = "",x = new_loan_df$emp_yrs,ignore.case = T)
@@ -83,7 +89,7 @@ new_loan_df$term_mnths <- as.numeric(new_loan_df$term_mnths)
 new_loan_df$revol_util_per <- as.numeric(new_loan_df$revol_util_per)
 
 
-# remove decimals in the annual income
+# remove decimals from the annual income, principal, late fee, total payments, recovery fees etc as these details are insignificant
 colnames(new_loan_df)
 new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt",
               "installment","total_rec_prncp","total_rec_int","recoveries",
@@ -96,13 +102,35 @@ new_loan_df[c("annual_inc","out_prncp","total_rec_late_fee","total_pymnt",
 table(new_loan_df$emp_yrs)
 
 
+# checking for duplicates
+sum(duplicated(new_loan_df$id,new_loan_df$member_id))
+# no duplicates identified.
+
+# checking outliers in loan amounts, interest rates
+quantile(x = new_loan_df$loan_amnt,na.rm = T)
 
 
 
+# outliers in loan amount
+ggplot(new_loan_df,aes(x = loan_status,y = loan_amnt)) + geom_boxplot()
+# There are outliers in charged_off and fully_paid customers
+
+# outliers in interest rate
+ggplot(new_loan_df,aes(x = loan_status,y = int_per)) + geom_boxplot()
+quantile(new_loan_df$int_per)
+
+#
+
+# calcuating mean loan amounts
+summary(c(new_loan_df$loan_amnt,new_loan_df$int_per,new_loan_df$collection_recovery_fee))
+
+library(scales)
+percent(sum((new_loan_df$loan_status == "charged off") & (new_loan_df$loan_amnt > quantile(x = new_loan_df$loan_amnt,probs = 0.95)))/sum(new_loan_df$loan_status == "charged off"))
+percent(sum((new_loan_df$loan_status == "current") & (new_loan_df$loan_amnt > quantile(x = new_loan_df$loan_amnt,probs = 0.95)))/sum(new_loan_df$loan_status == "current"))
+percent(sum((new_loan_df$loan_status == "fully paid") & (new_loan_df$loan_amnt > quantile(x = new_loan_df$loan_amnt,probs = 0.95)))/sum(new_loan_df$loan_status == "fully paid",na.rm = T))
 
 
 # year and date formating of dates
-
 
 # get the year of last payment due
 last_payment_due <- parse_date_time(x = new_loan_df$last_pymnt_d,orders = "%b-%y",tz = "Asia/Kolkata")
@@ -110,7 +138,6 @@ new_loan_df$lpd_year <- format(last_payment_due,"%Y")
 
 # Get the month of the last payment due
 new_loan_df$lpd_month <- format(last_payment_due,"%m")
-
 new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_year)
 
 
