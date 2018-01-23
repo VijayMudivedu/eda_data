@@ -135,9 +135,14 @@ percent(sum((new_loan_df$loan_status == "fully paid") & (new_loan_df$loan_amnt >
 last_payment_due <- parse_date_time(x = new_loan_df$last_pymnt_d,orders = "%b-%y",tz = "Asia/Kolkata")
 new_loan_df$lpd_year <- format(last_payment_due,"%Y")
 
+# get the year of last payment due
+issue_d <- parse_date_time(x = new_loan_df$issue_d,orders = "%b-%y",tz = "Asia/Kolkata")
+new_loan_df$issue_yr <- format(issue_d,"%Y")
+new_loan_df$issue_mth <- format(issue_d,"%m")
+
 # Get the month of the last payment due
 new_loan_df$lpd_month <- format(last_payment_due,"%m")
-new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_year)
+new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_month)
 
 
 
@@ -159,11 +164,23 @@ new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_year)
 
 
 
+# credit loss calculation
+# “Projected Annualized Net Credit Loss (w/ Prepayment)” (also known as Expected Charge-Off Rate) is LendingClub’s projection of the 
+# aggregate dollar amount of loan principal charged-off, 
+# net of any amounts recovered and accounting for the impact of amounts prepaid, 
+# as an annualized percentage of the aggregate dollar amount of loan principal for all loans issued under the Prime Program after May 4, 2017
+# credit_loss = loan amount given to the borrower - (principal repaid by the borrower + recoveries + prepaid amount)
 
+new_loan_df[1:which(new_loan_df$loan_amnt != new_loan_df$funded_amnt),]
 
+test_df <- data.frame(new_loan_df[1:100,c("total_pymnt","total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries","collection_recovery_fee")])
+test_df$calc_total_pymnt <- test_df[,"total_rec_prncp"]+test_df[,"total_rec_int"]+test_df[,"total_rec_late_fee"]+test_df[,"recoveries"]
 
+sum(new_loan_df_charged_off$out_prncp)
+sapply()
 
-
+                      
+                      
 # UNIVARIATE ANLYSIS
 
 # Univariate analysis of Loan_status
@@ -175,14 +192,22 @@ ggplot(new_loan_df,aes(loan_status)) +
 ggplot(new_loan_df,aes(x = lpd_year)) + geom_bar()
 
 
-# numer of loans by month
-ggplot(new_loan_df,aes(x=lpd_month)) + geom_bar()
-
 # interest rates
-ggplot(new_loan_df,aes(x = id,y = int_rate)) + geom_point()
+ggplot(new_loan_df,aes(int_per,fill=purpose)) + 
+  geom_histogram(binwidth = 1,aes(y = ..count..)) + 
+   stat_function(fun = dnorm, colour = "red", args = list(mean = mean(new_loan_df$int_per, na.rm = TRUE),sd = sd(new_loan_df$int_per, na.rm = TRUE)))
+
+# Annualized mean interest rates
+new_loan_df %>% filter(loan_status == "charged off") %>% group_by(year = issue_yr,grade) %>% summarise(avg_int_rate = mean(int_per)) %>%
+  ggplot(aes(year,avg_int_rate,fill=grade)) + geom_col() +
+  geom_text(aes(label = round(avg_int_rate,2)),size = 3, position = position_stack(vjust = 0.5))
 
 
-# number of loans in the month
+# loans issued by year
+ggplot(new_loan_df,aes(issue_yr,fill=grade)) + geom_bar()
+
+# annualized interest rate
+
 # study the profile of full paid customers
 # study the profile of Charged-off customers
 # study the profile of current customers
@@ -201,21 +226,33 @@ ggplot(new_loan_df,aes(reorder(addr_state,-table(addr_state)[addr_state]))) +geo
 # method#3 
 library(forcats)
 ggplot(new_loan_df,aes(fct_infreq(addr_state,ordered = T))) + geom_bar()
+# several loans were raised from CA,NY,FL,TX,NJ,PA,VA,GA,MA,OH
+
+
+# grade
+ggplot(new_loan_df,aes(fct_infreq(grade,ordered = T),fill=loan_status)) + 
+  geom_bar() +  
+  geom_text(stat = "count",size = 3, position = position_stack(vjust = 0.5),aes(label = paste(round(x = (..count..)*100/sum(..count..),digits = 2),"%")))
 
 # loan grade
 new_loan_df %>% filter(new_loan_df$loan_status != "fully paid" ) %>% 
   ggplot(aes(fct_infreq(grade,ordered = T),fill=loan_status)) + geom_bar(stat = "count",aes(identity = "count")) +
-  geom_text(stat = "count",aes(label = (..count..),vjust = -1, hjust = 0.5))
+  geom_text(stat = "count",aes(label = (..count..)),size = 3, position = position_stack(vjust = 0.5))
 
-# most of the charged_off loans are B and C grade loans
+# most of the charged_off loans are B,C and D grade loans
 
-# Sub_grade
-ggplot(new_loan_df,aes(fct_infreq(grade,ordered = T))) + 
-  geom_bar() +  
-  geom_text(stat = "count",aes(label = paste(round(x = (..count..)*100/sum(..count..),digits = 2),"%"),vjust = -0.5, hjust = 0.5))
 
+
+
+# subsetting charged_off loans for Risk Analytics
 new_loan_df_charged_off <- subset(new_loan_df,loan_status == "charged off")
 View(new_loan_df_charged_off)
+
+
+#univariate analysis for charged_off loans
+ggplot(new_loan_df_charged_off,aes(issue_yr,fill=grade)) + geom_bar() +
+  geom_text(stat = "count",size = 3, position = position_stack(vjust = 0.5),aes(label =(..count..)))
+# several of these charged_off loans were 2010 and 2011. 
 
 
 
