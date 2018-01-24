@@ -163,52 +163,61 @@ new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_month)
 # (understanding the types of variables and their significance should be enough).
 
 
+library(tvm)
 
+#------------------------------
 # credit loss calculation
-# “Projected Annualized Net Credit Loss (w/ Prepayment)” (also known as Expected Charge-Off Rate) is LendingClub’s projection of the 
-# aggregate dollar amount of loan principal charged-off, 
-# net of any amounts recovered and accounting for the impact of amounts prepaid, 
-# as an annualized percentage of the aggregate dollar amount of loan principal for all loans issued under the Prime Program after May 4, 2017
+#------------------------------
 
-# credit_loss = loan amount given to the borrower - (principal repaid by the borrower + net recoveries + impact of prepaid amount)
-
-# how many records have loan amount and funded amount in equal
-new_loan_df[1:which(new_loan_df$loan_amnt != new_loan_df$funded_amnt),]
+# credit_loss = loan amount given to the borrower + interest lost during unpaid months - (principal repaid by the borrower + net recoveries + impact of prepaid amount)
 
 # total payments = total received principal + Interest + late fee + recoveries
 # recovery collection fee is not part of the total payment
 
 names(new_loan_df)
-prncp <- new_loan_df$loan_amnt[1:100]
-roi <- new_loan_df$int_per[1:100]
-n_mnths <- as.vector(new_loan_df$term_mnths [1:100])
+
+roi <- new_loan_df_charged_off$int_per[1:100]/100
+n_mnths <- as.vector(new_loan_df_charged_off$term_mnths [1:100])
+
+# calculate months between periods
+start_date <- as.Date(issue_d[1:100])
+lpdue_date <- as.Date(parse_date_time(new_loan_df_charged_off$last_pymnt_d,orders = "%b-%y")[1:100])
+
+test_df <- data.frame(new_loan_df_charged_off[1:100,c("loan_amnt","total_pymnt","total_rec_prncp","installment","recoveries")],roi,n_mnths,start_date,lpdue_date)
+
+# total payments = total received principal + Interest + late fee + recoveries
+# recovery collection fee is not part of the total payment
+#test_df$calc_total_pymnt <- test_df[,"total_rec_prncp"]+test_df[,"total_rec_int"]+test_df[,"total_rec_late_fee"]+test_df[,"recoveries"]
+
+# calculate the number of months between two dates, to calculate the ROI lost as a result of charged off.
+#method #1
+#round(difftime(test_df$lpdue_date,test_df$start_date)[1:10]/(365.25/12),0)+1
+# method2:
+#difftime(test_df$lpdue_date,test_df$start_date,units = "weeks")[1:10]/(52.5/12)
+# method3:
+#interval(start_date,lpdue_date) %/% months(1)+1
+# method4
+
+test_df$paid_mths <- (year(lpdue_date)-year(start_date))*12 + (month(lpdue_date)-month(start_date))
+
+# remaing months unpaid
+test_df$unpaid_mths <- test_df$n_mnths - test_df$paid_mths
 
 
 
-test_df <- data.frame(new_loan_df[1:100,c("loan_amnt","total_pymnt","total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries")],prncp,roi,n_mnths)
-test_df$calc_total_pymnt <- test_df[,"total_rec_prncp"]+test_df[,"total_rec_int"]+test_df[,"total_rec_late_fee"]+test_df[,"recoveries"]
+# balance loan amount (the future value) = loan amount paid - principal received
 
-# calculate the number of months between two years, to calculate the ROI lost as a result of charged off.
-# Total interested to be received - actual interest received = Interest amount lost.
+test_df$future_value = (test_df$loan_amnt - test_df$total_rec_prncp)
 
 
-calc_int <- prncp*cumsum((1+roi/100)^(0:n_mnths-1)*roi/100)
-
-n_mnths
-sapply((1+roi), cumsum)
-sum(1+roi)
+# credit loss = emi of the balance unpaid * number of unpaid months - recoveries made of default.
+test_df$credit_loss <- round(pmt(amt =test_df$future_value, maturity = test_df$unpaid_mths,rate = test_df$roi/12),0)*test_df$unpaid_mths - test_df$recoveries
 
 
-sum(new_loan_df_charged_off$out_prncp)
-
-library(tvm)
-round(pmt(amt = prncp,maturity = n_mnths,rate = roi),0)
-
-test_loan <- new_loan_df[1:50,]
-write.csv(x = test_loan,file = "test_loan.csv")
-               
+#####################################
 
 
+# histogram for annual income and charged of loans
 
 
 
