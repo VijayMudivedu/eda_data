@@ -169,17 +169,61 @@ new_loan_df$lpd_month <- as.factor(new_loan_df$lpd_month)
 # aggregate dollar amount of loan principal charged-off, 
 # net of any amounts recovered and accounting for the impact of amounts prepaid, 
 # as an annualized percentage of the aggregate dollar amount of loan principal for all loans issued under the Prime Program after May 4, 2017
-# credit_loss = loan amount given to the borrower - (principal repaid by the borrower + recoveries + prepaid amount)
 
+# credit_loss = loan amount given to the borrower - (principal repaid by the borrower + net recoveries + impact of prepaid amount)
+
+# how many records have loan amount and funded amount in equal
 new_loan_df[1:which(new_loan_df$loan_amnt != new_loan_df$funded_amnt),]
 
-test_df <- data.frame(new_loan_df[1:100,c("total_pymnt","total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries","collection_recovery_fee")])
+# total payments = total received principal + Interest + late fee + recoveries
+# recovery collection fee is not part of the total payment
+
+names(new_loan_df)
+prncp <- new_loan_df$loan_amnt[1:100]
+roi <- new_loan_df$int_per[1:100]
+n_mnths <- as.vector(new_loan_df$term_mnths [1:100])
+
+
+
+test_df <- data.frame(new_loan_df[1:100,c("loan_amnt","total_pymnt","total_rec_prncp","total_rec_int","total_rec_late_fee","recoveries")],prncp,roi,n_mnths)
 test_df$calc_total_pymnt <- test_df[,"total_rec_prncp"]+test_df[,"total_rec_int"]+test_df[,"total_rec_late_fee"]+test_df[,"recoveries"]
 
-sum(new_loan_df_charged_off$out_prncp)
-sapply()
+# calculate the number of months between two years, to calculate the ROI lost as a result of charged off.
+# Total interested to be received - actual interest received = Interest amount lost.
 
-                      
+
+calc_int <- prncp*cumsum((1+roi/100)^(0:n_mnths-1)*roi/100)
+
+n_mnths
+sapply((1+roi), cumsum)
+sum(1+roi)
+
+
+sum(new_loan_df_charged_off$out_prncp)
+
+library(tvm)
+round(pmt(amt = prncp,maturity = n_mnths,rate = roi),0)
+
+test_loan <- new_loan_df[1:50,]
+write.csv(x = test_loan,file = "test_loan.csv")
+               
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       
 # UNIVARIATE ANLYSIS
 
