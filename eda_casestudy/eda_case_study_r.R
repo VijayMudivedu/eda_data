@@ -1,16 +1,13 @@
 
-
-
-
 #setwd("D:/MyDocs/eda/eda_data/_Upgrad")
-#setwd("~/Downloads/eda_data/eda_casestudy")
-setwd("~/OneDrive/OneDrive - Atimi Software Inc/Upgrad/_Upgrad/EDA/eda_casestudy")
+setwd("../eda_casestudy")
+# setwd("~/OneDrive/OneDrive - Atimi Software Inc/Upgrad/_Upgrad/EDA/eda_casestudy")
 
 
 getwd()
 
 #install.packages("tidyverse")
-#install.packages("tvm")
+# install.packages("tvm")
 library(tidyr)
 library(dplyr)
 library(lubridate)
@@ -22,20 +19,21 @@ library(formatR)
 library(ggthemes)
 library(ggplot2)
 library(forcats)
+library(RColorBrewer)
 
 
 # import the loan csv file for analysis
-loan_df <- read.csv("loan.csv", stringsAsFactors = F)
+loan_master_df <- read.csv("loan.csv", stringsAsFactors = F)
 # 
 # # back up the loan data_frame
-# loan_bkp <- loan_df
+# loan_bkp <- loan_master_df
 
 # review the loan data frame
-str(loan_df)
+str(loan_master_df)
 
 # subsetting charged_off loans for Risk Analytics
-table(loan_df$loan_status)
-loan_df_charged_off <- subset(x = loan_df, loan_status == "Charged Off")
+table(loan_master_df$loan_status)
+loan_df_charged_off <- subset(x = loan_master_df, loan_status == "Charged Off")
 head(loan_df_charged_off,n = 2)
 View(loan_df_charged_off)
 
@@ -151,7 +149,7 @@ loan_df_charged_off$term_mnths <-
               replacement = "")
 
 
-#loan_df_charged_off$emp_yrs <- loan_df[which(loan_df$loan_status == "Charged Off"),]$emp_length
+#loan_df_charged_off$emp_yrs <- loan_master_df[which(loan_master_df$loan_status == "Charged Off"),]$emp_length
 #----------------------------
 # replace " year", " years", " ", "+" with an exmplty space
 #----------------------------
@@ -282,14 +280,51 @@ sum(is.na(loan_df_charged_off$last_pymnt_d))
 # outliers in data_frame
 #----------------------------
 
-ggplot(loan_df_charged_off, aes(x = loan_status, y = loan_amnt)) + geom_boxplot()
+ggplot(loan_df_charged_off, aes(x = loan_status, y = loan_amnt)) + 
+  geom_boxplot()+
+  scale_y_continuous(name = "Loan Amount", labels = comma, breaks = seq(0,40000,5000))+ 
+  labs(title = expression(paste(bold("Outliers in the Loan Amount for Charged Off loans"))))+
+  theme(text = element_text(size = 11),
+        axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        axis.text = element_text(face = "bold"),
+        # axis.line = element_line(color = "black"),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA)
+        )
 # There are outliers in charged_off and fully_paid customers
 
 # outliers in interest rate
-ggplot(loan_df_charged_off, aes(x = loan_status, y = int_per)) + geom_boxplot()
+ggplot(loan_df_charged_off, aes(x = loan_status, y = int_per/100)) + 
+  geom_boxplot()+
+  scale_y_continuous(name = "Interest Rate", labels = percent)+ 
+  labs(title = expression(paste(bold("Outliers in the interest Rate for Charged Off loans"))))+
+  theme(text = element_text(size = 11),
+        axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        axis.text = element_text(face = "bold"),
+        # axis.line = element_line(color = "black"),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA)
+        )
 
 # examining outliers in annual_income
-ggplot(loan_df_charged_off, aes(x = loan_status, y = annual_inc)) + geom_boxplot()
+ggplot(loan_df_charged_off, 
+       aes(x = loan_status, y = annual_inc/1000)) + 
+  geom_boxplot()+
+  scale_y_continuous(name = "Annual Income (in `000s)", labels = comma, breaks = seq(0,1200,100))+ 
+  labs(title = expression(paste(bold("Outliers in the Annual Income for Charged Off loans"))))+
+  theme(text = element_text(size = 11),
+        axis.title.x = element_blank(),
+        axis.title = element_text(face="bold"),
+        axis.text = element_text(face = "bold"),
+        # axis.line = element_line(color = "black"),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA)
+        )
 
 # checking outliers in loan amounts, interest rates, annual incomes
 quantile(x = loan_df_charged_off$loan_amnt, na.rm = T)
@@ -408,32 +443,51 @@ write.csv(x = loan_df_charged_off,file = "loan_df_charged_off.csv")
 #-------------------------------------------------------
 
 # histogram for annual income and charged of loans
-ggplot(
-  subset(
-    loan_df_charged_off,
-    loan_df_charged_off$annual_inc < quantile(x = loan_df_charged_off$annual_inc, probs = 0.99)
-  ),
-  aes(annual_inc,fill = grade)
-) +
-  geom_histogram(binwidth = 10000) +
-  ggtitle("Frequency histogram of mean Annual Income")
+ggplot(data = subset(loan_df_charged_off,
+                     loan_df_charged_off$annual_inc < quantile(x = loan_df_charged_off$annual_inc, probs = 0.99)),
+       aes(x=annual_inc/1000,fill = grade)) +
+  geom_histogram(binwidth = 10) +
+  scale_x_continuous(name = "Annual Income (in `000s)", labels = comma, breaks = seq(0,200,25))+
+  scale_y_continuous(name = "Frequency", labels = comma, breaks = seq(0,1000,250))+
+  # scale_fill_brewer(palette = "Set2")+
+  labs(title = expression(paste(bold("Frequency histogram of mean Annual Income"))))+
+  theme(text = element_text(size = 11),
+        axis.title = element_text(face = "bold"),
+        axis.text = element_text(face = "bold"),
+        # axis.line = element_line(color = "black"),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA)
+        )
 
 # Comments: Annual income between 30K to 60K and loan application grades between B,C,D are most 
 # To be modified. 
 
 
 # loan grade
-loan_df_charged_off %>% filter(loan_df_charged_off$loan_status != "fully paid") %>%
-  ggplot(aes(fct_infreq(grade, ordered = T), fill = "red")) + geom_bar(stat = "count", aes(identity = "count")) +
-  geom_text(
-    stat = "count",
-    aes(label = paste(round((..count..)*100/sum(..count..),1),"%")),
-    size = 3,
-    position = position_stack(vjust = 0.5)) +
-  xlab(label = "grade") + ggtitle(label = "Count of Loan Grades") +
-  theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank())
+loan_df_charged_off %>% 
+  filter(loan_df_charged_off$loan_status != "fully paid") %>%
+  group_by(grade) %>%
+  summarise(num_loans = n()) %>%
+  mutate(loanpercent= num_loans/sum(num_loans)) %>%
+  
+  ggplot(aes(x = grade, y = loanpercent)) + 
+    geom_bar(stat = "identity", fill = "cornflowerblue") +
+    geom_text(aes(label = sprintf("%.01f %%",100*loanpercent)),
+              fontface="italic",size = 3.3,
+              position = position_stack(vjust = 0.5)) +
+  scale_y_continuous(name = "Percent", labels = percent, breaks = seq(0,.3,.05))+
+  labs(title = expression(paste(bold("Distributionn of loans in Loan Grades"))),
+             x = expression(paste(bold("Grade")))) +
+    theme(text = element_text(size = 11),
+          legend.position = "none",
+          axis.title = element_text(face = "bold"),
+          axis.text = element_text(face = "bold"),
+          # axis.text.y = element_blank(),
+          # axis.title.y = element_blank(),
+          panel.grid.major = element_line(colour = "grey75"),
+          panel.background = element_rect(fill = "grey90"),
+          panel.border = element_rect(linetype = "solid",fill =  NA))
 
 # most of the charged_off loans are B,C and D grade loans
 
@@ -447,20 +501,26 @@ loan_df_charged_off %>% filter(loan_df_charged_off$loan_status != "fully paid") 
 # using histogram to calculate the credit loss
 # impact of grades on credit loss
 
-ggplot(
-  subset(
-    loan_df_charged_off,loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$credit_loss, probs = 0.95,na.rm = T)
-  ),
-  aes(credit_loss,fill = home_ownership)
-) +
+ggplot(data = subset(loan_df_charged_off,
+                     loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$credit_loss, 
+                                                                probs = 0.95,na.rm = T)),
+        aes(x=(credit_loss),fill = home_ownership))+
   geom_histogram(binwidth = 5000) +
-  theme(legend.direction = "horizontal",
-    legend.position = "bottom",
-    panel.background = element_blank(),
-        axis.title.y = element_blank(),
-    axis.ticks.y = element_blank()) +
-  ggtitle("Frequency histogram of credit loss") +
-  scale_fill_manual("legend", values = c("mortgage" = "cornflowerblue","other" = "black", "own" = "orange","rent" = "azure3"))
+  scale_x_continuous(name = "Credit Loss", labels = comma, breaks = seq(0,30000,5000))+
+  scale_y_continuous(name = "Frequency", labels = comma, breaks = seq(0,2000,500))+
+  scale_fill_manual("legend", values = c("mortgage" = "peru",
+                                         "other" = "black", 
+                                         "own" = "bisque",
+                                         "rent" = "coral4"))+
+  labs(title = expression(paste(bold("Frequency histogram of credit loss")))) +
+  theme(text = element_text(size = 11),
+        legend.direction = "horizontal",
+        legend.position = "bottom",
+        axis.title = element_text(face = "bold"),
+        axis.text = element_text(face = "bold"),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA))
 
 # rent and mortaged customers show significant impact on charged-off loans .
 # customers with credit loss in the range of 5,000-10,000 show significant number of charged off loans
@@ -468,40 +528,49 @@ ggplot(
 
 # impact of employment experience on credit loss and defaults
 
-ggplot(
-  subset(loan_df_charged_off,
-    (loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$credit_loss, probs = 0.95,na.rm = T) & 
-       (loan_df_charged_off$emp_yrs != "na")
-    )),
-  aes(credit_loss,fill = verification_status)
-) +
+ggplot(data = subset(loan_df_charged_off,
+                     (loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$credit_loss, 
+                                                                 probs = 0.95,na.rm = T) & 
+                      loan_df_charged_off$emp_yrs != "na")),
+      aes(x = credit_loss,fill = verification_status)) +
   geom_histogram(binwidth = 5000) +
-  ggtitle("Frequency histogram of mean credit loss by verification status") +
-  theme(legend.direction = "horizontal",
+  scale_x_continuous(name = "Credit Loss", labels = comma, breaks = seq(0,30000,5000))+
+  scale_y_continuous(name = "Frequency", labels = comma, breaks = seq(0,2000,500))+
+  scale_fill_manual("legend", values = c("not verified" = "firebrick2",
+                                         "source verified" = "forestgreen", 
+                                         "verified" = "orange"))+
+  labs(title = expression(paste(bold("Frequency histogram of mean credit loss by verification status")))) +
+  theme(text = element_text(size = 11),
+        legend.direction = "horizontal",
         legend.position = "bottom",
-        panel.background = element_blank(),
-        axis.title.y = element_blank(),
-        axis.ticks.y = element_blank()) +
-  scale_fill_manual("legend", values = c("not verified" = "cornflowerblue","source verified" = "forestgreen", "verified" = "orange"))
+        axis.title = element_text(face = "bold"),
+        axis.text = element_text(face = "bold"),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA))
 
 
 # credit loss between 1 to 15000 is significant due to not verified and verified customers.
 # impact of ch on credit loss and defaults
 
-ggplot(
-  subset(loan_df_charged_off,
-    (loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$credit_loss, probs = 0.95,na.rm = T) 
-    )),
-  aes(credit_loss,fill = purpose)
-) +
+ggplot(data = subset(loan_df_charged_off,
+                     loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$credit_loss, 
+                                                                 probs = 0.95,na.rm = T)),
+       aes(x = credit_loss,fill = purpose)) +
   geom_histogram(binwidth = 5000) +
-  ggtitle("Frequency histogram of mean credit loss by 'purpose' of loan") +
-  theme(legend.direction = "horizontal",
+  scale_x_continuous(name = "Credit Loss", labels = comma, breaks = seq(0,30000,5000))+
+  scale_y_continuous(name = "Frequency", labels = comma, breaks = seq(0,2000,500))+
+  scale_fill_brewer(palette = "Paired")+
+  labs(title = expression(paste(bold("Frequency histogram of mean credit loss by 'purpose' of loan")))) +
+  theme(text = element_text(size = 11),
+        legend.direction = "horizontal",
         legend.position = "bottom",
-        panel.background = element_blank(),
-        axis.title.y = element_blank(),
-        axis.ticks.y = element_blank()) +
-  scale_fill_brewer(palette = "Paired")
+        axis.title = element_text(face = "bold"),
+        axis.text = element_text(face = "bold"),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA))
+  
 
 # Comments: majority of the credit loss is as a result of "debt consolidation" and "credit card" defaults. 
 # credit loss between $1 to $15000 is significant due to not verified and only source verified customers.
@@ -513,16 +582,25 @@ ggplot(
 #---
 
 #aes(fct_infreq(grade, ordered = T),
-ggplot(subset(loan_employers, loan_employers$Freq > 4) ,aes(x = fct_infreq(Var1,ordered = T),y = Freq,fill = "red")) +
+ggplot(data = subset(loan_employers, loan_employers$Freq > 4),
+       aes(x = fct_infreq(Var1,ordered = T),
+           y = Freq,
+           fill = factor(Freq)))+
   geom_col(aes(reorder(Var1, -Freq))) +
-  geom_text(aes(label = Freq),position = position_stack(vjust = 1.2),size = 3) +
-  theme(axis.text.x = element_text(angle = 90),
+  geom_text(aes(label = Freq),position = position_stack(vjust = 0.5),size = 3) +
+  # scale_fill_brewer(palette = "Blues", direction = -1)+
+  labs(title = expression(paste(bold("Frequency histogram of mean credit loss by 'purpose' of loan"))),
+           x = expression(paste(bold("Employee's Company"))),
+           y = expression(paste(bold("No of Defaults"))))+
+  theme(text = element_text(size = 11),
         legend.position = "none",
-        panel.background = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank()) +
-  xlab("Company Working for") + ylab("No of Defaults")
-
+        axis.title = element_text(face = "bold"),
+        axis.text = element_text(face = "bold"),
+        axis.text.x = element_text(angle = 90),
+        axis.ticks.y = element_blank(),
+        panel.grid.major = element_line(colour = "grey75"),
+        panel.background = element_rect(fill = "grey90"),
+        panel.border = element_rect(linetype = "solid",fill =  NA))
 # Data shows that majority of the defaulters are from US Army serving as ex-servicemen, bank of america, walmart, ups, at&t and verizon
 
 
@@ -559,12 +637,24 @@ loan_df_charged_off %>%
   group_by(emp_yrs,verification_status) %>%
   summarise(cr_loss = median(credit_loss,na.rm = T)) %>%
   arrange(desc(cr_loss)) %>%
-  ggplot(aes(emp_yrs, cr_loss,fill = verification_status)) + geom_col(aes(reorder(emp_yrs, -cr_loss))) +
-  xlab(" Employment (years)") + ylab("Average credit loss") + 
-  ggtitle("Average credit loss/Employment in years and verif. status") +
-  theme(legend.direction = "horizontal",
-        legend.position = "bottom",
-        title = element_text(size = 9))
+  ggplot(aes(x=emp_yrs, 
+             y=cr_loss,
+             fill = verification_status))+
+    geom_col(aes(reorder(emp_yrs, -cr_loss))) +
+    scale_y_continuous(labels = comma, breaks = seq(0,30000,5000))+
+    scale_fill_manual("legend", values = c("not verified" = "firebrick2",
+                                         "source verified" = "forestgreen", 
+                                         "verified" = "orange"))+   
+    labs(title = expression(paste(bold("Average credit loss/Employment in years and verif. status"))),
+             x = expression(paste(bold("Employment (years)"))),
+             y = expression(paste(bold("Average credit loss"))))+
+    theme(text = element_text(size = 11),
+          legend.direction = "horizontal",
+          legend.position = "bottom",          axis.title = element_text(face = "bold"),
+          axis.text = element_text(face = "bold"),
+          panel.grid.major = element_line(colour = "grey75"),
+          panel.background = element_rect(fill = "grey90"),
+          panel.border = element_rect(linetype = "solid",fill =  NA))
 
 
 #Comments: average credit loss is most due to 10+, 7 and 9 years expereience. 
@@ -578,14 +668,27 @@ loan_df_charged_off %>%
   group_by(home_ownership,purpose) %>%
   summarise(cr_loss = mean(credit_loss,na.rm = T)) %>%
   arrange(desc(cr_loss)) %>%
-  ggplot(aes(home_ownership, cr_loss,fill = "red")) + geom_col(aes(reorder(home_ownership, -cr_loss))) + 
-  xlab(" Employment (years)") + ylab("Average credit loss") + 
-  ggtitle("Average credit loss and Purpose") +
-  theme(legend.direction = "horizontal",
-        legend.position = 
-        title = element_text(size = 9)) +
-  scale_color_tableau("tableau10") +
-  theme_classic()
+  ggplot(aes(x=home_ownership, 
+             y=cr_loss,
+             fill = home_ownership))+
+    geom_col(aes(reorder(home_ownership, -cr_loss)))+
+    scale_y_continuous(labels = comma,breaks = seq(0,150000,25000))+
+    scale_fill_manual("legend", values = c("mortgage" = "peru",
+                                           "other" = "black", 
+                                           "own" = "bisque3",
+                                           "rent" = "coral4"))+
+    labs(title = expression(paste(bold("Average credit loss by home ownership"))),
+             x = expression(paste(bold("Home Ownership"))),
+             y = expression(paste(bold("Average credit loss"))))+
+    theme(text = element_text(size = 11),
+          legend.direction = "horizontal",
+          legend.position = "bottom",          
+          axis.title = element_text(face = "bold"),
+          axis.text = element_text(face = "bold"),
+          panel.grid.major = element_line(colour = "grey75"),
+          panel.background = element_rect(fill = "grey90"),
+          panel.border = element_rect(linetype = "solid",fill =  NA))
+    
   
 
 # About 50.45% percent of people charged of lived in "rental accomodation"
@@ -594,22 +697,47 @@ loan_df_charged_off %>%
 
 # E,F,G grade loans have highest average credit loss, though B,C,D loans are largest by count.
 loan_df_charged_off %>% 
-  group_by(grade,purpose) %>% 
-  summarise(avg_credit_loss = mean(credit_loss,na.rm = T)) %>% 
-  arrange(desc(avg_credit_loss)) %>%
-  ggplot(aes(grade,avg_credit_loss)) + 
-  geom_col(alpha = 1)
+        group_by(grade,purpose) %>% 
+        summarise(avg_credit_loss = mean(credit_loss,na.rm = T)) %>% 
+        arrange(desc(avg_credit_loss)) %>%
+    ggplot(aes(x=grade,
+               y=avg_credit_loss,
+               fill=grade)) + 
+      geom_col(alpha = 1)+
+      scale_y_continuous(labels = comma,breaks = seq(0,250000,50000))+
+      labs(title = expression(paste(bold("Average credit loss by Grade"))),
+             x = expression(paste(bold("Grade"))),
+             y = expression(paste(bold("Average credit loss"))))+
+      theme(text = element_text(size = 11),
+          legend.position = "none",          
+          axis.title = element_text(face = "bold"),
+          axis.text = element_text(face = "bold"),
+          panel.grid.major = element_line(colour = "grey75"),
+          panel.background = element_rect(fill = "grey90"),
+          panel.border = element_rect(linetype = "solid",fill =  NA))
+  
 
-
-# E,F,G grade loans have highest average credit loss, though BCD loans are largest by count.
+# home_improvement, small_business and debt_consolidation have highest average credit loss.
 loan_df_charged_off %>% 
-  group_by(grade,purpose) %>% 
-  summarise(avg_credit_loss = mean(credit_loss,na.rm = T)) %>% 
-  arrange(desc(avg_credit_loss)) %>%
-  ggplot(aes(purpose,avg_credit_loss)) + 
-  geom_col(aes(reorder(purpose,-avg_credit_loss))) +
-  theme(axis.text.x = element_text(angle = 90)) +
-  xlab("Purpose") + ylab("average credit loss")
+        group_by(grade,purpose) %>% 
+        summarise(avg_credit_loss = mean(credit_loss,na.rm = T)) %>% 
+        arrange(desc(avg_credit_loss)) %>%
+    ggplot(aes(x=purpose,
+               y=avg_credit_loss,
+               fill=purpose)) + 
+      geom_col(aes(reorder(purpose,-avg_credit_loss))) +
+      scale_y_continuous(labels = comma,breaks = seq(0,100000,25000))+
+      labs(title = expression(paste(bold("Average credit loss by Purpose"))),
+             x = expression(paste(bold("Purpose"))),
+             y = expression(paste(bold("Average credit loss"))))+
+      theme(text = element_text(size = 11),
+          legend.position = "none",          
+          axis.title = element_text(face = "bold"),
+          axis.text = element_text(face = "bold"),
+          axis.text.x = element_text(angle = 90),
+          panel.grid.major = element_line(colour = "grey75"),
+          panel.background = element_rect(fill = "grey90"),
+          panel.border = element_rect(linetype = "solid",fill =  NA))
 
 #Comments: Average credit loss is most contributed by home improvement and small business, debt consolidation, major purchase
 
@@ -620,14 +748,28 @@ loan_df_charged_off %>%
 
 purpose_verification <-  as.data.frame(table(loan_df_charged_off$purpose,loan_df_charged_off$verification_status))
 
-ggplot(purpose_verification,aes(x = Var1, y = Freq,fill = Var2)) + geom_col(aes(reorder(Var1,-Freq))) +
-  theme(axis.text.x = element_text(angle = 90))  + 
-  ggtitle("Bivariate analysis of Purpose of Vs Veri.Status") +
+ggplot(purpose_verification,
+       aes(x = Var1, y = Freq,fill = Var2))+
+  geom_col(aes(reorder(Var1,-Freq))) +
+  scale_y_continuous(labels = comma,breaks = seq(0,2500,500))+
+  scale_fill_manual("legend", values = c("not verified" = "firebrick2",
+                                         "source verified" = "forestgreen", 
+                                         "verified" = "orange"))+  
+  labs(title = expression(paste(bold("Bivariate analysis of Purpose of Vs Veri.Status"))),
+         x = expression(paste(bold("Purpose"))),
+         y = expression(paste(bold("Frequency"))))+
   guides(fill = guide_legend(title = "Verification Status")) +
-  theme(axis.title.x = element_blank(),
-        legend.position = "bottom",
-        legend.direction = "horizontal",
-        title = element_text(size = 8))
+  
+  theme(text = element_text(size = 11),
+      legend.direction = "vertical",
+      legend.position = "right",         
+      axis.title = element_text(face = "bold"),
+      axis.text = element_text(face = "bold"),
+      axis.text.x = element_text(angle = 90),
+      panel.grid.major = element_line(colour = "grey75"),
+      panel.background = element_rect(fill = "grey90"),
+      panel.border = element_rect(linetype = "solid",fill =  NA))
+
 
 
 # ggplot(loan_df_charged_off, aes(reorder(verification_status, -table(verification_status)[verification_status]),fill = purpose)) +
@@ -648,14 +790,32 @@ ggplot(purpose_verification,aes(x = Var1, y = Freq,fill = Var2)) + geom_col(aes(
 # impact of bivariate analysis of  annual income and credit loss 
 
 
-ggplot(
-   subset(
-     loan_df_charged_off,
-     (loan_df_charged_off$annual_inc < quantile(x = loan_df_charged_off$annual_inc,probs = 0.95) & !is.na(loan_df_charged_off$credit_loss))),
-     aes(x = annual_inc, y = credit_loss, col = verification_status)) + geom_point(position = "dodge",alpha = 0.4) + geom_smooth() +
-  ggtitle("Credit Loss Vs Annual Income") +
-  theme(legend.direction = "horizontal",
-        legend.position = "bottom")
+ggplot(subset(loan_df_charged_off,
+               (loan_df_charged_off$annual_inc < quantile(x = loan_df_charged_off$annual_inc, probs = 0.95) & 
+                !is.na(loan_df_charged_off$credit_loss))),
+     aes(x = annual_inc, 
+         y = credit_loss, 
+         col = verification_status))+
+  geom_point(position = "dodge",alpha = 0.4) + 
+  geom_smooth() +
+  scale_x_continuous(labels = comma,breaks = seq(0,150000,25000))+
+  scale_y_continuous(labels = comma,breaks = seq(0,50000,10000))+
+  scale_fill_manual("legend", values = c("not verified" = "firebrick2",
+                                         "source verified" = "forestgreen", 
+                                         "verified" = "orange"))+  
+  labs(title = expression(paste(bold("Credit Loss Vs Annual Income"))),
+         x = expression(paste(bold("Annual Income"))),
+         y = expression(paste(bold("Credit Loss"))))+
+  guides(fill = guide_legend(title = "Verification Status")) +
+  theme(text = element_text(size = 11),
+      legend.direction = "horizontal",
+      legend.position = "bottom",         
+      axis.title = element_text(face = "bold"),
+      axis.text = element_text(face = "bold"),
+      axis.text.x = element_text(angle = 0),
+      panel.grid.major = element_line(colour = "grey75"),
+      panel.background = element_rect(fill = "grey90"),
+      panel.border = element_rect(linetype = "solid",fill =  NA))
 
 
 
@@ -671,16 +831,14 @@ cor(loan_df_charged_off$open_acc,loan_df_charged_off$credit_loss,use = "na.or.co
 cor(loan_df_charged_off$revol_bal,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$revol_util_per,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$term_mnths,loan_df_charged_off$credit_loss,use = "na.or.complete")
-cor(loan_df_charged_off$emp_yrs,loan_df_charged_off$credit_loss,use = "na.or.complete")
-cor(loan_df_charged_off$installment,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$total_pymnt,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$unpaid_mths,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$loan_amnt,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$funded_amnt,loan_df_charged_off$credit_loss,use = "na.or.complete")
 
 # create a heat-map matrix of bivariate analysis of variables
-my_data_cols <- which(colnames(loan_df_charged_off) %in% c("loan_amnt","funded_amnt","int_per","installment","term_mnths",
-                                                           "emp_yrs","open_acc","revol_bal","revol_util_per","annual_inc",
+my_data_cols <- which(colnames(loan_df_charged_off) %in% c("loan_amnt","int_per","term_mnths",
+                                                           "open_acc","revol_bal","revol_util_per","annual_inc",
                                                            "unpaid_mths","credit_loss"))
 
 my_data <- loan_df_charged_off[,my_data_cols]
@@ -695,18 +853,40 @@ ggplot(melt(my_data_cor),aes(x = Var1,y = Var2)) +
   geom_text(aes(label = value),size = 3) +
   scale_fill_gradient2(low = "blue", high = "red", mid = "white", na.value = "white", 
                        midpoint = 0, limit = c(0,1),name = "Credit_loss \ncorrelation") +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), 
-       axis.text.y = element_text(vjust = 1, size = 9, hjust = 1),
-       axis.title.x = element_blank(),
-       axis.title.y = element_blank(),
-       axis.ticks = element_blank(),
-       legend.justification = c(1, 0),
-       legend.position = c(0.99, 0.1),
-       legend.direction = "horizontal") +
-  ggtitle("Correlation of various parameters on credit loss")
-  
+  labs(title = expression(paste(bold("Correlation of various parameters on credit loss"))))+
+  theme(text = element_text(size = 11),
+      legend.direction = "horizontal",
+      legend.position = c(0.99, 0.1),     
+      legend.justification = c(1, 0),
+      axis.title = element_text(face = "bold"),
+      axis.text = element_text(face = "bold"),
+      axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1),
+      axis.text.y = element_text(vjust = 1, size = 9, hjust = 1),
+      axis.title.y = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid.major = element_line(colour = "grey75"),
+      panel.background = element_rect(fill = "white"),
+      panel.border = element_rect(linetype = "solid",fill =  NA))
 
-ggplot(loan_df_charged_off,aes(x = verification_status,y = credit_loss,fill = (annual_inc))) + geom_col(alpha = 0.4)
+
+ggplot(loan_df_charged_off,
+       aes(x = verification_status,
+           y = credit_loss/1000,
+           fill = (annual_inc/1000))) + 
+  geom_col(alpha = 0.4)+
+  scale_y_continuous(labels = comma,breaks = seq(0,30000,5000))+
+  labs(title = expression(paste(bold("Credit Loss Vs Annual Income by Verification Status"))),
+         x = expression(paste(bold("Verifcation Status"))),
+         y = expression(paste(bold("Credit Loss (in`000s)"))))+
+  guides(fill = guide_legend(title = "Annual Income (in`000s)")) +
+  theme(text = element_text(size = 11),
+      legend.direction = "horizontal",
+      legend.position = "bottom",         
+      axis.title = element_text(face = "bold"),
+      axis.text = element_text(face = "bold"),
+      panel.grid.major = element_line(colour = "grey75"),
+      panel.background = element_rect(fill = "grey90"),
+      panel.border = element_rect(linetype = "solid",fill =  NA))
 
 
 
