@@ -4,9 +4,9 @@ setwd("../eda_casestudy")
 # setwd("~/OneDrive/OneDrive - Atimi Software Inc/Upgrad/_Upgrad/EDA/eda_casestudy")
 
 
-#install.packages("tidyverse")
-#install.packages("tvm")
-#install.packages("scales")
+install.packages("tidyverse")
+install.packages("tvm")
+install.packages("scales")
 
 
 library(tidyr)
@@ -32,8 +32,6 @@ str(loan_master_df)
 # subsetting charged_off loans for Risk Analytics
 table(loan_master_df$loan_status)
 loan_df_charged_off <- subset(x = loan_master_df, loan_status == "Charged Off")
-head(loan_df_charged_off,n = 2)
-View(loan_df_charged_off)
 
 #------------------------------------------------------------------
 # Data Cleaning
@@ -194,8 +192,7 @@ loan_df_charged_off[c(
   "total_rec_prncp",
   "total_rec_int",
   "recoveries",
-  "collection_recovery_fee",
-  "last_pymnt_amnt"   #we haven't used it in any analysis calculations
+  "collection_recovery_fee"
 )] <- round(loan_df_charged_off[c(
   "annual_inc",
   "total_rec_late_fee",
@@ -204,8 +201,7 @@ loan_df_charged_off[c(
   "total_rec_prncp",
   "total_rec_int",
   "recoveries",
-  "collection_recovery_fee",
-  "last_pymnt_amnt"
+  "collection_recovery_fee"
 )], 0)
 
 
@@ -293,7 +289,6 @@ loanee_employers <- as.data.frame(loanee_employers)
 # eliminating missing and considering more than 3 repetitions for analysis
 loanee_employers <- loanee_employers %>% filter(loanee_employers$Var1 != "missing" & loanee_employers$Freq > 3) %>% arrange(desc(Freq))
 head(loanee_employers)
-View(loanee_employers)
 
 
 
@@ -693,12 +688,7 @@ ggplot(data = subset(loanee_employers, loanee_employers$Freq > 4),
 # interest rates
 ggplot(loan_df_charged_off, aes(int_per,fill = grade)) +
   geom_histogram(binwidth = 2, aes(y = ..count..)) +
-  stat_function(fun = dnorm,
-                colour = "red",
-                args = list(
-                  mean = mean(loan_df_charged_off$int_per, na.rm = TRUE),
-                  sd = sd(loan_df_charged_off$int_per, na.rm = TRUE)
-                )) +
+  labs(title = "interest rates of grades") +
   scale_fill_brewer(palette = "Paired") +
   theme(axis.text.x = element_text(angle = 0),
         legend.position = "bottom",
@@ -904,6 +894,20 @@ ggplot(aes(x = Var1, y = Freq,fill = Var2)) +
 
 # Comments: majority of the debt consolidation loans are from US arym, Us Postal services
 
+loan_df_charged_off %>% group_by(sub_grade) %>% summarise(n=n()) %>%
+ggplot(aes(sub_grade,n)) + geom_col(aes(reorder(sub_grade,-n)))
+#B5, B3,C1, B4
+
+
+ggplot(loan_df_charged_off,aes(factor(term_mnths))) + geom_bar() +
+  labs(title = "term loan in months") + xlab("Term loan (months)")
+ggplot(loan_df_charged_off,aes(open_acc)) + geom_histogram(binwidth = 2) +
+  labs(title = "Open accounts for each customer") + xlab("Number of Open Accounts (months)")
+
+ggplot(loan_df_charged_off,aes(revol_util_per)) + geom_histogram(binwidth = 10) +
+  labs(title = "Revolving fund utilization") + xlab("Number of Open Accounts (months)")
+
+
 
 #########################################################
 # Bivariate Analysis of continuous variables.
@@ -939,13 +943,14 @@ ggplot(subset(loan_df_charged_off,
       panel.background = element_rect(fill = "grey90"),
       panel.border = element_rect(linetype = "solid",fill =  NA))
 
+# Comments: annual income between 25K to 60K caused significant credit loss
+
 
 # bivariate analysis of loan amount
 # loan amount and credit loss
 
 ggplot(loan_df_charged_off,aes(x = loan_amnt,y = credit_loss)) + geom_point() +
   labs(title = " loan amount and credit loss")
-s
 
 
 # calculating the correlation between the annual income and credit loss
