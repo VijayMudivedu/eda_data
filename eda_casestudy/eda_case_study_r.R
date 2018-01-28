@@ -527,7 +527,7 @@ ggplot(
   aes(credit_loss,fill = verification_status)
 ) +
   geom_histogram(binwidth = 5000) +
-  ggtitle("Impact of verification status on credit loss") +
+  ggtitle("Impact of verification status on credit loss ") +
   theme(legend.direction = "horizontal",
         legend.position = "bottom",
         panel.background = element_blank(),
