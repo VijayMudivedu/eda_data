@@ -315,13 +315,13 @@ loan_df_charged_off$emp_title <- gsub(pattern = ("robins us air force base|\\bus
 
 
 # companies with loan defaults. 
-loan_employers <- table(loan_df_charged_off[which(duplicated(loan_df_charged_off$emp_title)),]$emp_title)
-loan_employers <- as.data.frame(loan_employers)
+loanee_employers <- table(loan_df_charged_off[which(duplicated(loan_df_charged_off$emp_title)),]$emp_title)
+loanee_employers <- as.data.frame(loanee_employers)
 
 # eliminating missing and considering more than two repetitions for analysis
-loan_employers <- loan_employers %>% filter(loan_employers$Var1 != "missing" & loan_employers$Freq > 2) %>% arrange(desc(Freq))
-head(loan_employers)
-View(loan_employers)
+loanee_employers <- loanee_employers %>% filter(loanee_employers$Var1 != "missing" & loanee_employers$Freq > 2) %>% arrange(desc(Freq))
+head(loanee_employers)
+View(loanee_employers)
 
 
 
@@ -579,7 +579,7 @@ ggplot(
 #---
 
 #aes(fct_infreq(grade, ordered = T),
-ggplot(subset(loan_employers, loan_employers$Freq > 4) ,aes(x = fct_infreq(Var1,ordered = T),y = Freq,fill = "red")) +
+ggplot(subset(loanee_employers, loanee_employers$Freq > 4) ,aes(x = fct_infreq(Var1,ordered = T),y = Freq,fill = "red")) +
   geom_col(aes(reorder(Var1, -Freq))) +
   geom_text(aes(label = Freq),position = position_stack(vjust = 1.2),size = 3) +
   theme(axis.text.x = element_text(angle = 90),
@@ -589,8 +589,13 @@ ggplot(subset(loan_employers, loan_employers$Freq > 4) ,aes(x = fct_infreq(Var1,
         axis.ticks.y = element_blank()) +
   xlab("Company Working for") + ylab("No of Defaults")
 
-# Data shows that majority of the defaulters are from US Army serving as ex-servicemen, bank of america, walmart, ups, at&t and verizon
-
+# Data shows that are leading defaulters from:
+# 1           us army   49
+# 2 us postal service   37
+# 3     self employed   35
+# 4   bank of america   26
+# 5           walmart   24
+# 6  verizon wireless   21
 
 # interest rates
 ggplot(loan_df_charged_off, aes(int_per)) +
