@@ -248,10 +248,71 @@ sum(duplicated(loan_df_charged_off$id, loan_df_charged_off$member_id))
 # blanks in last_payment_due
 sum(loan_df_charged_off$last_pymnt_d == "")
 
+
+#emp_title <- loan_df_charged_off$emp_title
+# loan_df_charged_off$emp_title <- emp_title
+# emp_title <- loan_df_charged_off$emp_title
+# loan_df_charged_off$emp_title <- tolower(loan_df_charged_off$emp_title)
+# View(loan_df_charged_off)
+
 # empty rows in  "emp_title" being replaced with "missing"
 loan_df_charged_off[which(loan_df_charged_off$emp_title == ""),]$emp_title <- "missing"
-# united states army
-loan_df_charged_off[which(loan_df_charged_off$emp_title == "u.s. army"),]$emp_title <- "us army"
+
+#---
+# cleaning empt_title data
+#---
+
+# replacing cleaning job title of employee
+loan_df_charged_off$emp_title <- gsub(pattern = ("us army legal services agency|us army corps of engineers|dept of the army|dod us army civilian|oh army national guard|army fleet support|army|department of the army|u.s. army|u.s. army \\(active\\)|united sates army|united states army|us army"),
+     replacement = "us army",x = loan_df_charged_off$emp_title,
+     ignore.case = T)
+
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("bank of a|bank of america|bank of america corp."),
+                                      replacement = "bank of america",x = loan_df_charged_off$emp_title,
+                                      ignore.case = T)
+
+
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("walmart|walmart corporate|walmart corporation|walmart stores inc|walmart stores\\, inc.|walmart\\.com"),
+                                      replacement = "walmart",x = loan_df_charged_off$emp_title,
+                                      ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("\\bat and t\\b|\\bat and t mobility\\b|\\bat&t mobility\\b|\\batt\\b]"),
+                                      replacement = "at&t",x = loan_df_charged_off$emp_title,
+                                      ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("\\bverizon\\b|\\bverizon comm\\b|\\bverizon communication\\b|\\bverizon communications\\b|\\bverizon telecom\\b|\\bverizon wireless\\b"),
+                                      replacement = "verizon wireless",x = loan_df_charged_off$emp_title,
+                                      ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("assured self employed storage|catherine reitmyer\\(self employed\\)|\\b\\(self employed\\) castleforte group\\b|\\bmjmi \\-\\ self employed\\b|\\bself\\b|\\bself emp\\b|\\bself employed\\b|\\bself employed \\(cate design\\)\\b|\\bself employed consultant\\b|\\bself-contract labor\\b|\\bself-employed\\b|\\bself-employed ebay  loan request is to start a business\\b|\\bself-employeed\\b"),
+                                      replacement = "self employed",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("home depot|the home depot|the home depot rdc 5086"),
+                                      replacement = "home depot",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("\\busps\\b|\\busps post office\\b|\\bu.s postal service\\b|\\bu.s. postal service\\b|\\bu.s.postal service\\b|\\bunited state postal service\\b|\\bunited states postal service\\b|\\bus postal inspection service\\b|\\bus postal service\\b|\\bu.s.p.s\\b|\\bu.s.p.s.\\b"),
+                                      replacement = "us postal service",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("ibm|ibm corp|ibm corporation"),
+                                      replacement = "ibm",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("kaiser permanente|\\bkaiser permanente \\& south pacific rehab\\b|kaiser permanete nw|kaiser permenete"),
+                                      replacement = "kaiser permanente",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("wells fargo|wells fargo advisors\\, llc |wells fargo bank|wells fargo bank |wells fargo bank, n.a|wells fargo home mortgage|wells fargo insurance services usa, inc.|wellsfargo|wellsfargo home mortgage"),
+                                      replacement = "wells fargo",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("jp morgan|jp morgan chase|jp morgan chase |jpm chase|jpmorgan|jpmorgan chase|jpmorgan chase bank"),
+                                      replacement = "jp morgan",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("target|target corp|target corporation|target dc|target distribution"),
+                                      replacement = "target",x = loan_df_charged_off$emp_title,ignore.case = T)
+
+loan_df_charged_off$emp_title <- gsub(pattern = ("robins us air force base|\\bus air force det 3\\,544th intelligence group\\b|air force|u.s. air force|united states air force|united states air force dod|united states airforce|us air force"),
+                                      replacement = "us air force",x = loan_df_charged_off$emp_title,ignore.case = T)
+
 
 # companies with loan defaults. 
 loan_employers <- table(loan_df_charged_off[which(duplicated(loan_df_charged_off$emp_title)),]$emp_title)
@@ -261,6 +322,8 @@ loan_employers <- as.data.frame(loan_employers)
 loan_employers <- loan_employers %>% filter(loan_employers$Var1 != "missing" & loan_employers$Freq > 2) %>% arrange(desc(Freq))
 head(loan_employers)
 View(loan_employers)
+
+
 
 #----------------------------
 # check rows with NAs
@@ -445,7 +508,10 @@ loan_df_charged_off %>% filter(loan_df_charged_off$loan_status != "fully paid") 
 
 # impact of variables on classification of credit loss
 # using histogram to calculate the credit loss
+
+#----
 # impact of grades on credit loss
+#----
 
 ggplot(
   subset(
@@ -526,21 +592,21 @@ ggplot(subset(loan_employers, loan_employers$Freq > 4) ,aes(x = fct_infreq(Var1,
 # Data shows that majority of the defaulters are from US Army serving as ex-servicemen, bank of america, walmart, ups, at&t and verizon
 
 
-# # interest rates
-# ggplot(loan_df_charged_off, aes(int_per, fill = purpose)) +
-#   geom_histogram(binwidth = 1, aes(y = ..count..)) +
-#   stat_function(fun = dnorm,
-#                 colour = "red",
-#                 args = list(
-#                   mean = mean(loan_df_charged_off$int_per, na.rm = TRUE),
-#                   sd = sd(loan_df_charged_off$int_per, na.rm = TRUE)
-#                 )) +
-#   scale_fill_brewer(palette = "Set3") +
-#   theme(axis.text.x = element_text(angle = 0),
-#         legend.position = "bottom",
-#         panel.background = element_blank(),
-#         axis.text.y = element_blank(),
-#         axis.ticks.y = element_blank())
+# interest rates
+ggplot(loan_df_charged_off, aes(int_per)) +
+  geom_histogram(binwidth = 2, aes(y = ..count..)) +
+  stat_function(fun = dnorm,
+                colour = "red",
+                args = list(
+                  mean = mean(loan_df_charged_off$int_per, na.rm = TRUE),
+                  sd = sd(loan_df_charged_off$int_per, na.rm = TRUE)
+                )) +
+  scale_fill_brewer(palette = "Paired") +
+  theme(axis.text.x = element_text(angle = 0),
+        legend.position = "bottom",
+        panel.background = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
 
 
 #######################################
@@ -656,6 +722,8 @@ ggplot(
   ggtitle("Credit Loss Vs Annual Income") +
   theme(legend.direction = "horizontal",
         legend.position = "bottom")
+
+ggplot(loan_df_charged_off,aes(loan_amnt)) + geom_histogram()
 
 
 
