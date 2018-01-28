@@ -1,16 +1,14 @@
 
-
-
-
 #setwd("D:/MyDocs/eda/eda_data/_Upgrad")
 #setwd("~/Downloads/eda_data/eda_casestudy")
 setwd("~/OneDrive/OneDrive - Atimi Software Inc/Upgrad/_Upgrad/EDA/eda_casestudy")
 
 
-getwd()
-
 #install.packages("tidyverse")
 #install.packages("tvm")
+#install.packages("scales")
+
+
 library(tidyr)
 library(dplyr)
 library(lubridate)
@@ -18,10 +16,10 @@ library(stringr)
 library(scales)
 library(tvm)
 library(reshape2)
-library(formatR)
 library(ggthemes)
 library(ggplot2)
 library(forcats)
+options(scipen = 999)
 
 
 # import the loan csv file for analysis
@@ -77,7 +75,6 @@ which(colnames(loan_df_charged_off) %in% c(
   "next_pymnt_d",
   "out_prncp",
   "delinq_2yrs",
-  "inq_last_6mths",
   "mths_since_last_delinq",
   "last_credit_pull_d"
 ))
@@ -85,7 +82,7 @@ which(colnames(loan_df_charged_off) %in% c(
 
 
 #----------------------------
-# removing the identified the other unwanted columns
+# removing the identified the other unwanted columns. Columns do not provide enough insight
 #----------------------------
 loan_df_charged_off <-
   loan_df_charged_off[, -which(
@@ -103,7 +100,6 @@ loan_df_charged_off <-
       "total_pymnt_inv",
       "next_pymnt_d",
       "delinq_2yrs",
-      "inq_last_6mths",
       "mths_since_last_delinq",
       "last_credit_pull_d"
     )
@@ -118,6 +114,7 @@ loan_df_charged_off$home_ownership <- tolower(loan_df_charged_off$home_ownership
 loan_df_charged_off$verification_status <- tolower(loan_df_charged_off$verification_status)
 loan_df_charged_off$title <- tolower(loan_df_charged_off$title)
 loan_df_charged_off$purpose <- tolower(loan_df_charged_off$purpose)
+loan_df_charged_off$loan_status <- tolower(loan_df_charged_off$loan_status)
 
 
 # remaining columns are
@@ -131,7 +128,7 @@ loan_df_charged_off$grade <- as.factor(loan_df_charged_off$grade)
 loan_df_charged_off$sub_grade <- as.factor(loan_df_charged_off$sub_grade)
 loan_df_charged_off$home_ownership <- as.factor(loan_df_charged_off$home_ownership)
 loan_df_charged_off$purpose <- as.factor(loan_df_charged_off$purpose)
-
+loan_df_charged_off$inq_last_6mths <- as.factor(loan_df_charged_off$inq_last_6mths)
 
 #----------------------------
 # renaming the column headers of the below columns
@@ -164,28 +161,6 @@ loan_df_charged_off$emp_yrs <-
     ignore.case = T
   )
 
-#-------------- code to convert emp_years to numeric-------------
-# # replace <1 experience as 0 years of experience
-# loan_df_charged_off$emp_yrs <-
-#   gsub(
-#     pattern = "<1",
-#     replacement = "0",
-#     x = loan_df_charged_off$emp_yrs,
-#     ignore.case = T
-#   )
-# unique(loan_df_charged_off$emp_yrs)
-# 
-# typeof(loan_df_charged_off$emp_yrs)
-# loan_df_charged_off$emp_yrs <- round(as.numeric(loan_df_charged_off$emp_yrs),0)
-# 
-# #percent of NA is the employment years. 
-# percent(sum(is.na(loan_df_charged_off$emp_yrs)/length(loan_df_charged_off$emp_yrs)))
-# # replacing the NAs with mean value of the experience to reduce the impact of working experience on the data
-# 
-# # assigning the mean value to the missing NAs
-# loan_df_charged_off[which(is.na(loan_df_charged_off$emp_yrs)),]$emp_yrs <- mean(loan_df_charged_off$emp_yrs,na.rm = T)
-# 
-#--------------
 
 # removing the percentage character from revol_util_per column
 loan_df_charged_off$revol_util_per <-
@@ -205,6 +180,7 @@ loan_df_charged_off$int_per <- round(loan_df_charged_off$int_per, digits = 2)
 #convert term_mnths, revol_util_per to numeric
 loan_df_charged_off$term_mnths <- as.numeric(loan_df_charged_off$term_mnths)
 loan_df_charged_off$revol_util_per <- as.numeric(loan_df_charged_off$revol_util_per)
+
 
 #----------------------------
 # rounding of decimals in columns: annual income, principal, late fee, total payments, recovery fees etc as these details are insignificant
@@ -245,21 +221,20 @@ sum(duplicated(loan_df_charged_off$id, loan_df_charged_off$member_id))
 # blanks in data_frame
 #----------------------------
 
-# blanks in last_payment_due
+# blanks in last_payment_due, emp_title, interest rate, loan amount,
 sum(loan_df_charged_off$last_pymnt_d == "")
+sum(loan_df_charged_off$emp_title == "")
+sum(loan_df_charged_off$loan_amnt == "")
+sum(loan_df_charged_off$int_per == "")
 
+# replace 
 
-#emp_title <- loan_df_charged_off$emp_title
-# loan_df_charged_off$emp_title <- emp_title
-# emp_title <- loan_df_charged_off$emp_title
-# loan_df_charged_off$emp_title <- tolower(loan_df_charged_off$emp_title)
-# View(loan_df_charged_off)
 
 # empty rows in  "emp_title" being replaced with "missing"
 loan_df_charged_off[which(loan_df_charged_off$emp_title == ""),]$emp_title <- "missing"
 
 #---
-# cleaning empt_title data
+# cleaning employee job_title data
 #---
 
 # replacing cleaning job title of employee
@@ -365,12 +340,11 @@ quantile(x = loan_df_charged_off$annual_inc, na.rm = T)
 # number of customers with annual income more than 99percentile of the median annual income
 sum(loan_df_charged_off$annual_inc > quantile(x = loan_df_charged_off$annual_inc, probs = 0.99))
 
-# which customers whose annual income is 99 percentile above the median annual income
-loan_df_charged_off[which(loan_df_charged_off$annual_inc > quantile(x = loan_df_charged_off$annual_inc, probs = 0.99)),]
+# percentage of charged-off customers, current and fully paid customers above 95 the percentile of data
+percent(sum(loan_df_charged_off$annual_inc > quantile(x = loan_df_charged_off$annual_inc, probs = 0.95)) / length(loan_df_charged_off$id))
+# Thus 5% of customers are above 95% percentile of annual income 
 
-# # percentage of charged-off customers, current and fully paid customers above 95 the percentile of data
-# percent(sum(loan_df_charged_off$loan_amnt > quantile(x = loan_df_charged_off$loan_amnt, probs = 0.95)) / length(loan_df_charged_off$id))
-
+ 
 #---------------------------
 # cleaning the date formats 
 #---------------------------
@@ -398,7 +372,13 @@ loan_df_charged_off$issue_date  <-
 #  "Identification of RISKY applicants using EDA is the aim of this case study."
 # - lending loans to "risky" applicants is the largest source of financial loss (called credit loss).
 # - The credit loss is the amount of money lost by the lender when the borrower refuses to pay or runs away with the money owed.
-# - In other words, borrowers who default cause the largest amount of loss to the lenders.In this case, the customers labelled as 'charged-off' are the 'defaulters'.
+
+# The aim is to identify patterns which indicate if a person is likely to default, 
+# which may be used for taking actions such as: 
+# denying the loan, reducing the amount of loan, lending (to risky applicants) at a higher interest rate, etc.
+
+# who is likely to default?
+
 
 
 # RISK ANALYTICS
@@ -410,7 +390,7 @@ loan_df_charged_off$issue_date  <-
 # credit loss calculation
 #------------------------------
 
-# credit_loss = prepaid_amount + loan amount given to the borrower + interest lost during unpaid months - (principal repaid by the borrower + net recoveries)
+# credit_loss = prepaid_credit_amount + loan amount given to the borrower + interest lost during unpaid months - (principal repaid by the borrower + net recoveries)
 # total payments = total received principal + Interest + late fee + recoveries
 # recovery collection fee is not part of the total payment
 
@@ -470,19 +450,21 @@ write.csv(x = loan_df_charged_off,file = "loan_df_charged_off.csv")
 # UNIVARIATE ANLYSIS
 #-------------------------------------------------------
 
-# histogram for annual income and charged of loans
+#---
+# histogram for credit loss and charged of loans
+#---
 ggplot(
   subset(
     loan_df_charged_off,
-    loan_df_charged_off$annual_inc < quantile(x = loan_df_charged_off$annual_inc, probs = 0.99)
+    loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$annual_inc, probs = 1)
   ),
-  aes(annual_inc,fill = grade)
+  aes(credit_loss,fill = grade)
 ) +
-  geom_histogram(binwidth = 10000) +
-  ggtitle("Frequency histogram of mean Annual Income")
+  geom_histogram(binwidth = 5000) +
+  ggtitle("Frequency histogram of mean credit loss") +
+  theme(legend.position = "bottom") 
 
-# Comments: Annual income between 30K to 60K and loan application grades between B,C,D are most 
-# To be modified. 
+# Comments: Data suggests that loan applicants with grades between B,C,D are most likely to default and cause heavy credit loss.
 
 
 # loan grade
@@ -578,8 +560,7 @@ ggplot(
 # univariate analysis of job title
 #---
 
-#aes(fct_infreq(grade, ordered = T),
-ggplot(subset(loanee_employers, loanee_employers$Freq > 4) ,aes(x = fct_infreq(Var1,ordered = T),y = Freq,fill = "red")) +
+ggplot(subset(loan_employers, loan_employers$Freq > 4) ,aes(x = fct_infreq(Var1,ordered = T),y = Freq,fill = "red")) +
   geom_col(aes(reorder(Var1, -Freq))) +
   geom_text(aes(label = Freq),position = position_stack(vjust = 1.2),size = 3) +
   theme(axis.text.x = element_text(angle = 90),
@@ -588,6 +569,15 @@ ggplot(subset(loanee_employers, loanee_employers$Freq > 4) ,aes(x = fct_infreq(V
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank()) +
   xlab("Company Working for") + ylab("No of Defaults")
+
+
+
+# 
+# loan_df_charged_off %>% filter(emp_title %in% loanee_employers$Var1) %>% top_n(n=20) %>%
+# ggplot(aes(fct_infreq(emp_title, ordered = T))) + geom_bar() +
+#   theme(axis.text.x = element_text(angle = 90))
+#   
+
 
 # Data shows that are leading defaulters from:
 # 1           us army   49
@@ -598,7 +588,7 @@ ggplot(subset(loanee_employers, loanee_employers$Freq > 4) ,aes(x = fct_infreq(V
 # 6  verizon wireless   21
 
 # interest rates
-ggplot(loan_df_charged_off, aes(int_per)) +
+ggplot(loan_df_charged_off, aes(int_per,fill = grade)) +
   geom_histogram(binwidth = 2, aes(y = ..count..)) +
   stat_function(fun = dnorm,
                 colour = "red",
@@ -728,7 +718,11 @@ ggplot(
   theme(legend.direction = "horizontal",
         legend.position = "bottom")
 
-ggplot(loan_df_charged_off,aes(loan_amnt)) + geom_histogram()
+
+# bivariate analysis of loan amount
+# loan amount and credit loss
+
+ggplot(loan_df_charged_off,aes(x = loan_amnt,y = credit_loss)) + geom_point()
 
 
 
@@ -744,16 +738,14 @@ cor(loan_df_charged_off$open_acc,loan_df_charged_off$credit_loss,use = "na.or.co
 cor(loan_df_charged_off$revol_bal,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$revol_util_per,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$term_mnths,loan_df_charged_off$credit_loss,use = "na.or.complete")
-cor(loan_df_charged_off$emp_yrs,loan_df_charged_off$credit_loss,use = "na.or.complete")
-cor(loan_df_charged_off$installment,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$total_pymnt,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$unpaid_mths,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$loan_amnt,loan_df_charged_off$credit_loss,use = "na.or.complete")
 cor(loan_df_charged_off$funded_amnt,loan_df_charged_off$credit_loss,use = "na.or.complete")
 
 # create a heat-map matrix of bivariate analysis of variables
-my_data_cols <- which(colnames(loan_df_charged_off) %in% c("loan_amnt","funded_amnt","int_per","installment","term_mnths",
-                                                           "emp_yrs","open_acc","revol_bal","revol_util_per","annual_inc",
+my_data_cols <- which(colnames(loan_df_charged_off) %in% c("loan_amnt","int_per","term_mnths",
+                                                           "open_acc","revol_bal","revol_util_per","annual_inc",
                                                            "unpaid_mths","credit_loss"))
 
 my_data <- loan_df_charged_off[,my_data_cols]
@@ -788,6 +780,28 @@ ggplot(loan_df_charged_off,aes(x = verification_status,y = credit_loss,fill = (a
 
 
 
+#-------------- code to convert emp_years to numeric-------------
+# # replace <1 experience as 0 years of experience
+# loan_df_charged_off$emp_yrs <-
+#   gsub(
+#     pattern = "<1",
+#     replacement = "0",
+#     x = loan_df_charged_off$emp_yrs,
+#     ignore.case = T
+#   )
+# unique(loan_df_charged_off$emp_yrs)
+# 
+# typeof(loan_df_charged_off$emp_yrs)
+# loan_df_charged_off$emp_yrs <- round(as.numeric(loan_df_charged_off$emp_yrs),0)
+# 
+# #percent of NA is the employment years. 
+# percent(sum(is.na(loan_df_charged_off$emp_yrs)/length(loan_df_charged_off$emp_yrs)))
+# # replacing the NAs with mean value of the experience to reduce the impact of working experience on the data
+# 
+# # assigning the mean value to the missing NAs
+# loan_df_charged_off[which(is.na(loan_df_charged_off$emp_yrs)),]$emp_yrs <- mean(loan_df_charged_off$emp_yrs,na.rm = T)
+# 
+#--------------
 
 
 #  Another significant 
