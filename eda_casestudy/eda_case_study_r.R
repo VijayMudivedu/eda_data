@@ -451,24 +451,25 @@ write.csv(x = loan_df_charged_off,file = "loan_df_charged_off.csv")
 #-------------------------------------------------------
 
 #---
-# histogram for credit loss and charged of loans
+# histogram for Annual Income
 #---
 ggplot(
   subset(
     loan_df_charged_off,
-    loan_df_charged_off$credit_loss < quantile(x = loan_df_charged_off$annual_inc, probs = 1)
+    loan_df_charged_off$annual_inc < quantile(x = loan_df_charged_off$annual_inc, probs = 0.99)
   ),
-  aes(credit_loss,fill = grade)
+  aes(annual_inc,fill = grade)
 ) +
-  geom_histogram(binwidth = 5000) +
-  ggtitle("Frequency histogram of mean credit loss") +
+  geom_histogram(binwidth = 10000) +
+  ggtitle("Annual income distribution on credit loss") +
   theme(legend.position = "bottom") 
 
-# Comments: Data suggests that loan applicants with grades between B,C,D are most likely to default and cause heavy credit loss.
+# Comments: Data suggests that loan applicants with grades between B,C,D,E are most likely to default and cause heavy credit loss.
+# and income between 30K to 60K are most likely to default.
 
 
 # loan grade
-loan_df_charged_off %>% filter(loan_df_charged_off$loan_status != "fully paid") %>%
+loan_df_charged_off %>%
   ggplot(aes(fct_infreq(grade, ordered = T), fill = "red")) + geom_bar(stat = "count", aes(identity = "count")) +
   geom_text(
     stat = "count",
@@ -507,14 +508,16 @@ ggplot(
     panel.background = element_blank(),
         axis.title.y = element_blank(),
     axis.ticks.y = element_blank()) +
-  ggtitle("Frequency histogram of credit loss") +
+  ggtitle("Impact of grades on credit loss") +
   scale_fill_manual("legend", values = c("mortgage" = "cornflowerblue","other" = "black", "own" = "orange","rent" = "azure3"))
 
 # rent and mortaged customers show significant impact on charged-off loans .
 # customers with credit loss in the range of 5,000-10,000 show significant number of charged off loans
 
 
+#-----
 # impact of employment experience on credit loss and defaults
+#-----
 
 ggplot(
   subset(loan_df_charged_off,
@@ -524,7 +527,7 @@ ggplot(
   aes(credit_loss,fill = verification_status)
 ) +
   geom_histogram(binwidth = 5000) +
-  ggtitle("Frequency histogram of mean credit loss by verification status") +
+  ggtitle("Impact of verification status on credit loss") +
   theme(legend.direction = "horizontal",
         legend.position = "bottom",
         panel.background = element_blank(),
