@@ -3,10 +3,10 @@
 setwd("../eda_casestudy")
 # setwd("~/OneDrive/OneDrive - Atimi Software Inc/Upgrad/_Upgrad/EDA/eda_casestudy")
 
-
-install.packages("tidyverse")
-install.packages("tvm")
-install.packages("scales")
+# 
+# install.packages("tidyverse")
+# install.packages("tvm")
+# install.packages("scales")
 
 
 library(tidyr)
@@ -28,6 +28,7 @@ loan_master_df <- read.csv("loan.csv", stringsAsFactors = F)
 
 # review the loan data frame
 str(loan_master_df)
+# 39717 obs. of  111 variables:
 
 # subsetting charged_off loans for Risk Analytics
 table(loan_master_df$loan_status)
